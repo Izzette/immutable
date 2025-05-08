@@ -50,6 +50,30 @@ func TestSetsDelete(t *testing.T) {
 	}
 }
 
+func TestSetBuilder(t *testing.T) {
+	b := NewSetBuilder[string](nil)
+	b.Set("test3")
+	b.Set("test1")
+	b.Set("test2")
+
+	s := b.ToSet()
+	if s.Len() != 3 {
+		t.Fatalf("Set has wrong number of items")
+	}
+	if !s.Has("test1") {
+		t.Fatalf("Missing item test1")
+	}
+	if !s.Has("test2") {
+		t.Fatalf("Missing item test2")
+	}
+	if !s.Has("test3") {
+		t.Fatalf("Missing item test3")
+	}
+	if s.Has("test4") {
+		t.Fatalf("Unexpected item test4")
+	}
+}
+
 func TestSortedSetsPut(t *testing.T) {
 	s := NewSortedSet[string](nil)
 	s2 := s.Add("1").Add("1").Add("0")

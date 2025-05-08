@@ -92,6 +92,14 @@ func NewSetBuilder[T any](hasher Hasher[T]) *SetBuilder[T] {
 	return &SetBuilder[T]{s: NewSet(hasher)}
 }
 
+// ToSet returns returns the current copy of the set.
+// The builder should not be used again after the list after this call.
+func (s SetBuilder[T]) ToSet() Set[T] {
+	set := s.s
+	s.s = Set[T]{}
+	return set
+}
+
 func (s SetBuilder[T]) Set(val T) {
 	s.s.m = s.s.m.set(val, struct{}{}, true)
 }
