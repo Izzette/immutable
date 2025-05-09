@@ -236,6 +236,60 @@ func TestList(t *testing.T) {
 		}
 	})
 
+	t.Run("AllSimple", func(t *testing.T) {
+		l := NewList(1, 2, 3, 4, 5)
+		seq := l.All()
+
+		count := 0
+		seq(func(v int) bool {
+			count++
+			return true
+		})
+
+		if count != 5 {
+			t.Errorf("Expected 5 elements, got %d", count)
+		}
+	})
+
+	t.Run("ÄllWirhIndex", func(t *testing.T) {
+		l := NewList(1, 2, 3, 4, 5)
+		seq := l.AllWithIndex()
+
+		count := 0
+		seq(func(i int, v int) bool {
+			count++
+			if i != count-1 {
+				t.Errorf("Expected index %d, got %d", count-1, i)
+			}
+			return true
+		})
+
+		if count != 5 {
+			t.Errorf("Expected 5 elements, got %d", count)
+		}
+	})
+
+	t.Run("AllBreaks", func(t *testing.T) {
+		lb := NewListBuilder[int]()
+		for i := 0; i < 100; i++ {
+			lb.Append(i)
+		}
+		l := lb.List()
+
+		calls := 0
+		l.All()(func(v int) bool {
+			calls++
+			if v == 57 {
+				return false
+			}
+			return true
+		})
+
+		if calls != 58 {
+			t.Fatalf("expected 58 calls to the yield function. Got %d instead", calls)
+		}
+	})
+
 	RunRandom(t, "Random", func(t *testing.T, rand *rand.Rand) {
 		l := NewTList()
 		for i := 0; i < 100000; i++ {

@@ -48,6 +48,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/benbjohnson/immutable/immutableiter"
 	"golang.org/x/exp/constraints"
 )
 
@@ -229,6 +230,23 @@ func (l *List[T]) Iterator() *ListIterator[T] {
 	return itr
 }
 
+// All returns an [iter.Seq] function that can be used to perform range-like operations on the [iter.Seq] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [List.Iterator] method and wrapping the iterator with [immutableiter.IndexedSeq].
+func (l *List[T]) All() immutableiter.Seq[T] {
+	return immutableiter.IndexedSeq[T](l.Iterator())
+}
+
+// AllWithIndex returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function
+// API.
+//
+// This is equivalent to calling the [List.Iterator] method and wrapping the iterator with [immutableiter.IndexedSeqWithIndex].
+//
+// TODO(Izzette) chose either All or AllWithIndex?
+func (l *List[T]) AllWithIndex() immutableiter.Seq2[int, T] {
+	return immutableiter.IndexedSeqWithIndex[T](l.Iterator())
+}
+
 // ListBuilder represents an efficient builder for creating new Lists.
 type ListBuilder[T any] struct {
 	list *List[T] // current state
@@ -292,6 +310,25 @@ func (b *ListBuilder[T]) Slice(start, end int) {
 func (b *ListBuilder[T]) Iterator() *ListIterator[T] {
 	assert(b.list != nil, "immutable.ListBuilder: builder invalid after List() invocation")
 	return b.list.Iterator()
+}
+
+// All returns an [iter.Seq] function that can be used to perform range-like operations on the [iter.Seq] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [ListBuilder.Iterator] method and wrapping the iterator with [immutableiter.IndexedSeq].
+//
+// TODO(Izzette): should the builders really have All or is this just noise?
+func (l *ListBuilder[T]) All() immutableiter.Seq[T] {
+	return immutableiter.IndexedSeq[T](l.Iterator())
+}
+
+// AllWithIndex returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function
+// API.
+//
+// This is equivalent to calling the [ListBuilder.Iterator] method and wrapping the iterator with [immutableiter.IndexedSeqWithIndex].
+//
+// TODO(Izzette): should the builders really have All or is this just noise?
+func (l *ListBuilder[T]) AllWithIndex() immutableiter.Seq2[int, T] {
+	return immutableiter.IndexedSeqWithIndex[T](l.Iterator())
 }
 
 // Constants for bit shifts used for levels in the List trie.
@@ -539,6 +576,8 @@ func (n *listLeafNode[T]) deleteAfter(index int, mutable bool) listNode[T] {
 }
 
 // ListIterator represents an ordered iterator over a list.
+//
+// ListIterator implements [immutableiter.IndexedIterator] for T.
 type ListIterator[T any] struct {
 	list  *List[T] // source list
 	index int      // current index position
@@ -813,6 +852,13 @@ func (m *Map[K, V]) Iterator() *MapIterator[K, V] {
 	return itr
 }
 
+// All returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [Map.Iterator] method and wrapping the iterator with [immutableiter.KeyedSeq].
+func (m *Map[K, V]) All() immutableiter.Seq2[K, V] {
+	return immutableiter.KeyedSeq[K, V](m.Iterator())
+}
+
 // MapBuilder represents an efficient builder for creating Maps.
 type MapBuilder[K, V any] struct {
 	m *Map[K, V] // current state
@@ -860,6 +906,13 @@ func (b *MapBuilder[K, V]) Delete(key K) {
 func (b *MapBuilder[K, V]) Iterator() *MapIterator[K, V] {
 	assert(b.m != nil, "immutable.MapBuilder: builder invalid after Map() invocation")
 	return b.m.Iterator()
+}
+
+// All returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [MapBuilder.Iterator] method and wrapping the iterator with [immutableiter.KeyedSeq].
+func (m *MapBuilder[K, V]) All() immutableiter.Seq2[K, V] {
+	return immutableiter.KeyedSeq[K, V](m.Iterator())
 }
 
 // mapNode represents any node in the map tree.
@@ -1435,6 +1488,8 @@ type mapEntry[K, V any] struct {
 
 // MapIterator represents an iterator over a map's key/value pairs. Although
 // map keys are not sorted, the iterator's order is deterministic.
+//
+// MapIterator implements [immutableiter.KeyedIterator] for K and V.
 type MapIterator[K, V any] struct {
 	m *Map[K, V] // source map
 
@@ -1704,6 +1759,13 @@ func (m *SortedMap[K, V]) Iterator() *SortedMapIterator[K, V] {
 	return itr
 }
 
+// All returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [SortedMap.Iterator] method and wrapping the iterator with [immutableiter.KeyedSeq].
+func (m *SortedMap[K, V]) All() immutableiter.Seq2[K, V] {
+	return immutableiter.KeyedSeq[K, V](m.Iterator())
+}
+
 // SortedMapBuilder represents an efficient builder for creating sorted maps.
 type SortedMapBuilder[K, V any] struct {
 	m *SortedMap[K, V] // current state
@@ -1751,6 +1813,13 @@ func (b *SortedMapBuilder[K, V]) Delete(key K) {
 func (b *SortedMapBuilder[K, V]) Iterator() *SortedMapIterator[K, V] {
 	assert(b.m != nil, "immutable.SortedMapBuilder: builder invalid after Map() invocation")
 	return b.m.Iterator()
+}
+
+// All returns an [iter.Seq2] function that can be used to perform range-like operations on the [iter.Seq2] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [SortedMapBuilder.Iterator] method and wrapping the iterator with [immutableiter.KeyedSeq].
+func (m *SortedMapBuilder[K, V]) All() immutableiter.Seq2[K, V] {
+	return immutableiter.KeyedSeq[K, V](m.Iterator())
 }
 
 // sortedMapNode represents a branch or leaf node in the sorted map.
@@ -2035,6 +2104,8 @@ func (n *sortedMapLeafNode[K, V]) delete(key K, c Comparer[K], mutable bool, res
 
 // SortedMapIterator represents an iterator over a sorted map.
 // Iteration can occur in natural or reverse order based on use of Next() or Prev().
+//
+// SortedMapIterator implements the [immutableiter.KeyedIterator] interface for K and V.
 type SortedMapIterator[K, V any] struct {
 	m *SortedMap[K, V] // source map
 

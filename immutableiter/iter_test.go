@@ -1,16 +1,15 @@
-package immutable
+package immutableiter
 
 import (
 	"reflect"
 	"testing"
 )
 
-func TestIndexedSeq(t *testing.T) {
-	// Create a new list with some values
-	l := NewList(1, 2, 3, 4, 5)
+// TODO(Izzette): test some non-happy cases where the assertations in iter.go will fail.
 
-	// Create an IndexedIterator for the list
-	it := l.Iterator()
+func TestIndexedSeq(t *testing.T) {
+	// Create an IndexedIterator
+	it := &mockIndexedIterator[int]{values: []int{1, 2, 3, 4, 5}}
 
 	// Create a sequence using IndexedSeq
 	seq := IndexedSeq[int](it)
@@ -34,11 +33,8 @@ func TestIndexedSeq(t *testing.T) {
 }
 
 func TestIndexedSeqWithIndex(t *testing.T) {
-	// Create a new list with some values
-	l := NewList(1, 2, 3, 4, 5)
-
-	// Create an IndexedIterator for the list
-	it := l.Iterator()
+	// Create an IndexedIterator
+	it := &mockIndexedIterator[int]{values: []int{1, 2, 3, 4, 5}}
 
 	// Create a sequence using IndexedSeqWithIndex
 	seq := IndexedSeqWithIndex[int](it)
@@ -62,22 +58,21 @@ func TestIndexedSeqWithIndex(t *testing.T) {
 }
 
 func TestKeyedSeq(t *testing.T) {
-	// Create a new Map with some key-value pairs
-	mb := NewMapBuilder[string, int](nil)
-	mb.Set("a", 1)
-	mb.Set("b", 2)
-	mb.Set("c", 3)
-	m := mb.Map()
-
-	// Create a KeyedIterator for the map
-	it := m.Iterator()
+	// Create a KeyedIterator
+	it := &mockKeyedIterator[string, int]{
+		Pairs: []kvPair[string, int]{
+			{"a", 1},
+			{"b", 2},
+			{"c", 3},
+		},
+	}
 
 	// Create a sequence using KeyedSeq
 	seq := KeyedSeq[string, int](it)
 
 	// Initialize a counter to track the number of yielded values
 	count := 0
-	found := make(map[string]int, m.Len())
+	found := make(map[string]int, len(it.Pairs))
 
 	// Define a yield function that increments the counter
 	yield := func(k string, v int) bool {
@@ -103,22 +98,21 @@ func TestKeyedSeq(t *testing.T) {
 }
 
 func TestKeyedSeqSortedMap(t *testing.T) {
-	// Create a new SortedMap with some key-value pairs
-	mb := NewSortedMapBuilder[string, int](nil)
-	mb.Set("a", 1)
-	mb.Set("b", 2)
-	mb.Set("c", 3)
-	m := mb.Map()
-
-	// Create a KeyedIterator for the map
-	it := m.Iterator()
+	// Create a KeyedIterator
+	it := &mockKeyedIterator[string, int]{
+		Pairs: []kvPair[string, int]{
+			{"a", 1},
+			{"b", 2},
+			{"c", 3},
+		},
+	}
 
 	// Create a sequence using KeyedSeq
 	seq := KeyedSeq[string, int](it)
 
 	// Initialize a counter to track the number of yielded values
 	count := 0
-	found := make(map[string]int, m.Len())
+	found := make(map[string]int, len(it.Pairs))
 
 	// Define a yield function that increments the counter
 	yield := func(k string, v int) bool {
@@ -144,18 +138,15 @@ func TestKeyedSeqSortedMap(t *testing.T) {
 }
 
 func TestUnkeyedSeq(t *testing.T) {
-	// Create a new set with some values
-	s := NewSet(nil, 1, 2, 3)
-
-	// Create an UnkeyedIterator for the set
-	it := s.Iterator()
+	// Create an UnkeyedIterator
+	it := &mockUnkeyedIterator[int]{Values: []int{1, 2, 3}}
 
 	// Create a sequence using UnkeyedSeq
 	seq := UnkeyedSeq[int](it)
 
 	// Initialize a counter to track the number of yielded values
 	count := 0
-	found := make(map[int]struct{}, s.Len())
+	found := make(map[int]struct{}, len(it.Values))
 
 	// Define a yield function that increments the counter
 	yield := func(v int) bool {
@@ -182,18 +173,15 @@ func TestUnkeyedSeq(t *testing.T) {
 }
 
 func TestUnkeyedSeqSortedSet(t *testing.T) {
-	// Create a new sorted set with some values
-	s := NewSortedSet(nil, 1, 2, 3)
-
-	// Create an UnkeyedIterator for the set
-	it := s.Iterator()
+	// Create an UnkeyedIterator
+	it := &mockUnkeyedIterator[int]{Values: []int{1, 2, 3}}
 
 	// Create a sequence using UnkeyedSeq
 	seq := UnkeyedSeq[int](it)
 
 	// Initialize a counter to track the number of yielded values
 	count := 0
-	found := make(map[int]struct{}, s.Len())
+	found := make(map[int]struct{}, len(it.Values))
 
 	// Define a yield function that increments the counter
 	yield := func(v int) bool {
@@ -217,4 +205,100 @@ func TestUnkeyedSeqSortedSet(t *testing.T) {
 	if !reflect.DeepEqual(found, expected) {
 		t.Errorf("Expected %v, got %v", expected, found)
 	}
+}
+
+// mockIndexedIterator is a mock implementation of [IndexedIterator] for testing purposes.
+type mockIndexedIterator[T any] struct {
+	// The current index of the iterator
+	index int
+
+	// The values to iterate over
+	values []T
+}
+
+// First implements [IndexedIterator.First].
+func (m *mockIndexedIterator[T]) First() {
+	m.index = 0
+}
+
+// Done implements [IndexedIterator.Done].
+func (m *mockIndexedIterator[T]) Done() bool {
+	return m.index >= len(m.values)
+}
+
+// Next implements [IndexedIterator.Next].
+func (m *mockIndexedIterator[T]) Next() (int, T) {
+	if m.Done() {
+		return -1, *new(T)
+	}
+	val := m.values[m.index]
+	m.index++
+	return m.index - 1, val
+}
+
+// kvPair is a key-value pair used in the mockKeyedIterator.
+type kvPair[K, V any] struct {
+	// The Key of the pair
+	Key K
+
+	// The value of the pair
+	Value V
+}
+
+// mockKeyedIterator is a mock implementation of [KeyedIterator] for testing purposes.
+type mockKeyedIterator[K, V any] struct {
+	// The current Index of the iterator
+	Index int
+
+	// The key-value Pairs to iterate over
+	Pairs []kvPair[K, V]
+}
+
+// First implements [KeyedIterator.First].
+func (m *mockKeyedIterator[K, V]) First() {
+	m.Index = 0
+}
+
+// Done implements [KeyedIterator.Done].
+func (m *mockKeyedIterator[K, V]) Done() bool {
+	return m.Index >= len(m.Pairs)
+}
+
+// Next implements [KeyedIterator.Next].
+func (m *mockKeyedIterator[K, V]) Next() (K, V, bool) {
+	if m.Done() {
+		return *new(K), *new(V), false
+	}
+	pair := m.Pairs[m.Index]
+	m.Index++
+	return pair.Key, pair.Value, true
+}
+
+// mockUnkeyedIterator is a mock implementation of [UnkeyedIterator] for testing purposes.
+type mockUnkeyedIterator[T any] struct {
+	// The current Index of the iterator
+	Index int
+
+	// The Values to iterate over
+	Values []T
+}
+
+// First implements [UnkeyedIterator.First].
+func (m *mockUnkeyedIterator[T]) First() {
+	m.Index = 0
+}
+
+// Done implements [UnkeyedIterator.Done].
+func (m *mockUnkeyedIterator[T]) Done() bool {
+	return m.Index >= len(m.Values)
+}
+
+// Next implements [UnkeyedIterator.Next].
+func (m *mockUnkeyedIterator[T]) Next() (T, bool) {
+	if m.Done() {
+		return *new(T), false
+	}
+	val := m.Values[m.Index]
+	m.Index++
+	return val, true
 }

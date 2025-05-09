@@ -1,5 +1,7 @@
 package immutable
 
+import "github.com/benbjohnson/immutable/immutableiter"
+
 // Set represents a collection of unique values. The set uses a Hasher
 // to generate hashes and check for equality of key values.
 //
@@ -62,8 +64,17 @@ func (s Set[T]) Iterator() *SetIterator[T] {
 	return itr
 }
 
+// All returns an [iter.Seq] function that can be used to perform range-like operations on the [iter.Seq] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [Set.Iterator] method and wrapping the iterator with [immutableiter.UnkeyedSeq].
+func (s Set[T]) All() immutableiter.Seq[T] {
+	return immutableiter.UnkeyedSeq[T](s.Iterator())
+}
+
 // SetIterator represents an iterator over a set.
 // Iteration can occur in natural or reverse order based on use of Next() or Prev().
+//
+// SetIterator implements [immutableiter.UnkeyedIterator] for T.
 type SetIterator[T any] struct {
 	mi *MapIterator[T, struct{}]
 }
@@ -92,6 +103,9 @@ func NewSetBuilder[T any](hasher Hasher[T]) *SetBuilder[T] {
 	return &SetBuilder[T]{s: NewSet(hasher)}
 }
 
+// Set
+//
+// TODO(Izzette): challenge the naming of this function, as the Set type uses Add not Set for this functionality.
 func (s SetBuilder[T]) Set(val T) {
 	s.s.m = s.s.m.set(val, struct{}{}, true)
 }
@@ -107,6 +121,9 @@ func (s SetBuilder[T]) Has(val T) bool {
 func (s SetBuilder[T]) Len() int {
 	return s.s.Len()
 }
+
+// TODO(Izzette): is there any reason that the SetBuilder and SortedSetBuilder types do not return Iterators?
+// If not, than should we add them to the types and add All() methods as well?
 
 type SortedSet[T any] struct {
 	m *SortedMap[T, struct{}]
@@ -167,8 +184,17 @@ func (s SortedSet[T]) Iterator() *SortedSetIterator[T] {
 	return itr
 }
 
+// All returns an [iter.Seq] function that can be used to perform range-like operations on the [iter.Seq] and inter-operate with other libraries using the Go 1.23 iterable function API.
+//
+// This is equivalent to calling the [SortedSet.Iterator] method and wrapping the iterator with [immutableiter.UnkeyedSeq].
+func (s SortedSet[T]) All() immutableiter.Seq[T] {
+	return immutableiter.UnkeyedSeq[T](s.Iterator())
+}
+
 // SortedSetIterator represents an iterator over a sorted set.
 // Iteration can occur in natural or reverse order based on use of Next() or Prev().
+//
+// SortedSetIterator implements [immutableiter.UnkeyedIterator] for T.
 type SortedSetIterator[T any] struct {
 	mi *SortedMapIterator[T, struct{}]
 }
@@ -217,6 +243,9 @@ func NewSortedSetBuilder[T any](comparer Comparer[T]) *SortedSetBuilder[T] {
 	return &SortedSetBuilder[T]{s: &s}
 }
 
+// Set
+//
+// TODO(Izzette): challenge the naming of this function, as the SortedSet type uses Add not Set for this functionality
 func (s SortedSetBuilder[T]) Set(val T) {
 	s.s.m = s.s.m.set(val, struct{}{}, true)
 }
